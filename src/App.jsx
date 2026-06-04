@@ -1,118 +1,160 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function App() {
-
-  // Sab sa Pahla 4 state baneo 
   const [isRecording, setIsRecording] = useState(false);
   const [notes, setNotes] = useState([]);
-  const [timer, setTimer] = useState(0)
-  const [searchText, setSearchText] = useState('')
+  const [timer, setTimer] = useState(0);
+  const [searchText, setSearchText] = useState("");
 
-  // Pher 4 Reference bana ha useRef hook ka use kar ka taka data save rahe
   const mediaRecorderRef = useRef(null);
   const audioChunkRef = useRef([]);
   const intervalRef = useRef(null);
   const listEndRef = useRef(null);
 
-
-  // Notes ko Filter Karna useMemo ka use kar ka 
-  const filtersNotes = useMemo(() => {
-    console.log('Huzaifa Filtering Chal Rahe ha Wait Karo.....');
-    return notes.filter((note) => {
-      return note.text.toLowerCase().includes(searchText.toLowerCase()) // Ye return add karo
-    });
-  }, [notes, searchText])
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) =>
+      note.text.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [notes, searchText]);
 
   useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    listEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [notes]);
 
-
-  // Create Start reccording function for OnClick Event
   const startRecording = async () => {
     try {
-      // Pahla Browser sa Mic Open Karna ki Permission Mango
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunkRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (e) => {
-        audioChunkRef.current.push(e.data)
+        audioChunkRef.current.push(e.data);
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunkRef.current, { type: 'audio/webm' });
-
-        const fakeText = `Voice note ${notes.length + 1} - ${timer} second`
+        const audioBlob = new Blob(audioChunkRef.current, {
+          type: "audio/webm",
+        });
 
         const newNote = {
           id: Date.now(),
-          text: fakeText,
+          text: `Voice Note ${notes.length + 1}`,
           audioUrl: URL.createObjectURL(audioBlob),
-          duration: timer
+          duration: timer,
         };
 
-        setNotes(prev => [...prev, newNote]);
+        setNotes((prev) => [...prev, newNote]);
 
-        stream.getTracks().forEach(track => track.stop())
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
-
       setTimer(0);
+
       intervalRef.current = setInterval(() => {
-        setTimer(prev => prev + 1)
-      }, 1000)
-
+        setTimer((prev) => prev + 1);
+      }, 1000);
     } catch (error) {
-      console.log('Mic ki Permission Nahe mele bhai', error.message);
+      console.error(error);
     }
-  }
+  };
 
-  function stopRecording() {
+  const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false)
-      clearInterval(intervalRef.current)
+      setIsRecording(false);
+      clearInterval(intervalRef.current);
     }
-  }
+  };
 
   return (
-    <div className="p-5 max-w-150 m-auto mt-2 border rounded-[18px]">
-      <h1 className="mb-1 ml-1">Ai Voice Notes Tracker</h1>
-      <div className="border-2 border-[#ccc] p-5">
-        <h2 className="mb-2">Timer: {timer}s</h2>
-        {
-          !isRecording ? (
-            <button onClick={startRecording} className="py-2.5 px-7.5 rounded-[10px] text-[16px] border">Start Recording</button>
-          ) : (
-            <button onClick={stopRecording} className="py-2.5 px-7.5 rounded-[10px] text-[16px]  bg-red-600 text-white">Stop Recording</button>
-          )}
-      </div>
-      {/* Ab ham Search Wala Field Likha ga jes ma ham Usememo topic cover karenga */}
-      <input type="search"
-        placeholder="Search Yours Notes...."
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        className="w-full p-2.5 my-[15px] rounded-lg outline-none  text-[16px] border"
-      />
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-5">
+      <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6">
+        <h1 className="text-3xl font-bold text-white text-center mb-6">
+          AI Voice Notes Tracker
+        </h1>
 
-      {/* Ab Yaha Notes ko ake List form ma dekhayenga  */}
-      <div className="border-2 border-[#ccc] p-[20px] rounded-[8px] h-[300px] overflow-y-auto">
-        <h2>Your Notes: {filtersNotes.length}</h2>
-        {filtersNotes.length === 0 && <p>Notes Note Found. Please Start Recording</p>}
-        {
-          filtersNotes.map((nodetxt) => (
-            <div key={nodetxt.id} className="border-b p-2.5">
-              <p><b>{nodetxt.text}</b></p>
-              <audio controls src={nodetxt.audioUrl}></audio>
-              <p>Duration: {nodetxt.duration}s</p>
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h2 className="text-xl font-semibold text-white">
+              Timer: {timer}s
+            </h2>
+
+            {!isRecording ? (
+              <button
+                onClick={startRecording}
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-xl text-white font-medium"
+              >
+                Start Recording
+              </button>
+            ) : (
+              <button
+                onClick={stopRecording}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 transition rounded-xl text-white font-medium"
+              >
+                Stop Recording
+              </button>
+            )}
+          </div>
+        </div>
+
+        <input
+          type="search"
+          placeholder="Search notes..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-400 outline-none focus:border-indigo-500 mb-5"
+        />
+
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 h-[450px] overflow-y-auto">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-semibold text-white">
+              Your Notes
+            </h2>
+
+            <span className="bg-slate-700 text-slate-200 px-3 py-1 rounded-lg text-sm">
+              {filteredNotes.length}
+            </span>
+          </div>
+
+          {filteredNotes.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-slate-400">
+                No notes found
+              </p>
             </div>
-          ))}
-        <div ref={listEndRef} />
+          ) : (
+            filteredNotes.map((note) => (
+              <div
+                key={note.id}
+                className="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4"
+              >
+                <h3 className="text-white font-semibold mb-3">
+                  {note.text}
+                </h3>
+
+                <audio
+                  controls
+                  src={note.audioUrl}
+                  className="w-full mb-3"
+                />
+
+                <p className="text-slate-400 text-sm">
+                  Duration: {note.duration}s
+                </p>
+              </div>
+            ))
+          )}
+
+          <div ref={listEndRef} />
+        </div>
       </div>
     </div>
-  )
+  );
 }
-export default App
+
+export default App;
